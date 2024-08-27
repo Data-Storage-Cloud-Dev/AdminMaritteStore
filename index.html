@@ -131,6 +131,15 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: none;
         }
+
+        .filter-container {
+            margin-bottom: 20px;
+        }
+
+        .filter-container select {
+            width: auto;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -174,6 +183,18 @@
         <textarea id="edit-product-description" placeholder="Descrição do Produto" required></textarea>
         <input type="file" id="edit-product-image" accept="image/*">
         <button onclick="updateProduct()">Atualizar Produto</button>
+    </div>
+
+    <!-- Filtro de produtos -->
+    <div class="filter-container">
+        <h2>Filtrar Produtos</h2>
+        <select id="category-filter">
+            <option value="">Todas as Categorias</option>
+            <option value="category1">Categoria 1</option>
+            <option value="category2">Categoria 2</option>
+            <!-- Adicione mais opções de filtro aqui -->
+        </select>
+        <input type="text" id="search-filter" placeholder="Pesquisar por nome...">
     </div>
 
     <!-- Lista de produtos -->
@@ -307,6 +328,9 @@
     }
 
     function loadProducts() {
+        const categoryFilter = document.getElementById('category-filter').value;
+        const searchFilter = document.getElementById('search-filter').value.toLowerCase();
+
         const productsRef = ref(db, 'products');
         onValue(productsRef, snapshot => {
             const productList = document.getElementById('product-list');
@@ -315,47 +339,56 @@
                 const product = childSnapshot.val();
                 const productId = childSnapshot.key;
 
-                const productItem = document.createElement('div');
-                productItem.className = 'product-item';
+                // Apply filters
+                const matchesCategory = categoryFilter === '' || product.category === categoryFilter;
+                const matchesSearch = product.name.toLowerCase().includes(searchFilter);
 
-                const productImage = document.createElement('img');
-                productImage.src = product.image;
-                productImage.alt = product.name;
-                productItem.appendChild(productImage);
+                if (matchesCategory && matchesSearch) {
+                    const productItem = document.createElement('div');
+                    productItem.className = 'product-item';
 
-                const productName = document.createElement('h3');
-                productName.textContent = product.name;
-                productItem.appendChild(productName);
+                    const productImage = document.createElement('img');
+                    productImage.src = product.image;
+                    productImage.alt = product.name;
+                    productItem.appendChild(productImage);
 
-                const productDescription = document.createElement('p');
-                productDescription.textContent = product.description;
-                productItem.appendChild(productDescription);
+                    const productName = document.createElement('h3');
+                    productName.textContent = product.name;
+                    productItem.appendChild(productName);
 
-                const productPrice = document.createElement('p');
-                productPrice.textContent = 'R$ ' + product.price.toFixed(2);
-                productItem.appendChild(productPrice);
+                    const productDescription = document.createElement('p');
+                    productDescription.textContent = product.description;
+                    productItem.appendChild(productDescription);
 
-                const editButton = document.createElement('button');
-                editButton.textContent = 'Editar';
-                editButton.onclick = function() {
-                    document.getElementById('edit-product-id').value = productId;
-                    document.getElementById('edit-product-name').value = product.name;
-                    document.getElementById('edit-product-price').value = product.price;
-                    document.getElementById('edit-product-description').value = product.description;
-                };
-                productItem.appendChild(editButton);
+                    const productPrice = document.createElement('p');
+                    productPrice.textContent = 'R$ ' + product.price.toFixed(2);
+                    productItem.appendChild(productPrice);
 
-                const removeButton = document.createElement('button');
-                removeButton.textContent = 'Remover';
-                removeButton.onclick = function() {
-                    removeProduct(productId);
-                };
-                productItem.appendChild(removeButton);
+                    const editButton = document.createElement('button');
+                    editButton.textContent = 'Editar';
+                    editButton.onclick = function() {
+                        document.getElementById('edit-product-id').value = productId;
+                        document.getElementById('edit-product-name').value = product.name;
+                        document.getElementById('edit-product-price').value = product.price;
+                        document.getElementById('edit-product-description').value = product.description;
+                    };
+                    productItem.appendChild(editButton);
 
-                productList.appendChild(productItem);
+                    const removeButton = document.createElement('button');
+                    removeButton.textContent = 'Remover';
+                    removeButton.onclick = function() {
+                        removeProduct(productId);
+                    };
+                    productItem.appendChild(removeButton);
+
+                    productList.appendChild(productItem);
+                }
             });
         });
     }
+
+    document.getElementById('category-filter').addEventListener('change', loadProducts);
+    document.getElementById('search-filter').addEventListener('input', loadProducts);
 
     loadProducts();
 </script>
