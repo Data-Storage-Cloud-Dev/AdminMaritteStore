@@ -101,6 +101,7 @@
             height: auto;
             border-radius: 4px;
             margin-bottom: 10px;
+            alt: "Imagem do Produto";
         }
 
         .product-item button {
@@ -117,6 +118,18 @@
         .product-item button:hover {
             background-color: #c0392b;
             transform: translateY(-3px);
+        }
+
+        .notification {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #5a2d82;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: none;
         }
     </style>
 </head>
@@ -145,10 +158,10 @@
     <!-- Formulário para adicionar produto -->
     <div class="form-container">
         <h2>Adicionar Novo Produto</h2>
-        <input type="text" id="product-name" placeholder="Nome do Produto">
-        <input type="number" id="product-price" placeholder="Preço" step="0.01">
-        <textarea id="product-description" placeholder="Descrição do Produto"></textarea>
-        <input type="file" id="product-image" accept="image/*">
+        <input type="text" id="product-name" placeholder="Nome do Produto" required>
+        <input type="number" id="product-price" placeholder="Preço" step="0.01" required>
+        <textarea id="product-description" placeholder="Descrição do Produto" required></textarea>
+        <input type="file" id="product-image" accept="image/*" required>
         <button onclick="addProduct()">Adicionar Produto</button>
     </div>
 
@@ -156,9 +169,9 @@
     <div class="form-container">
         <h2>Editar Produto</h2>
         <input type="text" id="edit-product-id" placeholder="ID do Produto" readonly>
-        <input type="text" id="edit-product-name" placeholder="Nome do Produto">
-        <input type="number" id="edit-product-price" placeholder="Preço" step="0.01">
-        <textarea id="edit-product-description" placeholder="Descrição do Produto"></textarea>
+        <input type="text" id="edit-product-name" placeholder="Nome do Produto" required>
+        <input type="number" id="edit-product-price" placeholder="Preço" step="0.01" required>
+        <textarea id="edit-product-description" placeholder="Descrição do Produto" required></textarea>
         <input type="file" id="edit-product-image" accept="image/*">
         <button onclick="updateProduct()">Atualizar Produto</button>
     </div>
@@ -170,12 +183,13 @@
 
 </div>
 
+<div class="notification" id="notification"></div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
     import { getDatabase, ref, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
     import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-storage.js";
 
-    // Configuração do Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyBhNN1vh1G_BEwRe9r4A-4bEN9WbYA_Xy0",
         authDomain: "maritestore-12ce5.firebaseapp.com",
@@ -186,12 +200,19 @@
         measurementId: "G-0JZS99PC9M"
     };
 
-    // Inicializar o Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const storage = getStorage(app);
 
-    // Função para adicionar produto
+    function showNotification(message) {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.style.display = 'block';
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 3000);
+    }
+
     window.addProduct = async function() {
         const name = document.getElementById('product-name').value;
         const price = parseFloat(document.getElementById('product-price').value);
@@ -212,14 +233,14 @@
                     image: imageUrl
                 });
 
-                alert('Produto adicionado com sucesso!');
+                showNotification('Produto adicionado com sucesso!');
                 loadProducts();
                 clearForm();
             } catch (error) {
-                alert('Erro ao adicionar produto: ' + error.message);
+                showNotification('Erro ao adicionar produto: ' + error.message);
             }
         } else {
-            alert('Por favor, preencha todos os campos corretamente e selecione uma imagem.');
+            showNotification('Por favor, preencha todos os campos corretamente e selecione uma imagem.');
         }
     }
 
@@ -230,18 +251,16 @@
         document.getElementById('product-image').value = '';
     }
 
-    // Função para remover produto
     window.removeProduct = function(id) {
         const productRef = ref(db, 'products/' + id);
         remove(productRef).then(() => {
-            alert('Produto removido com sucesso!');
+            showNotification('Produto removido com sucesso!');
             loadProducts();
         }).catch(error => {
-            alert('Erro ao remover produto: ' + error.message);
+            showNotification('Erro ao remover produto: ' + error.message);
         });
     }
 
-    // Função para atualizar produto
     window.updateProduct = async function() {
         const id = document.getElementById('edit-product-id').value;
         const name = document.getElementById('edit-product-name').value;
@@ -268,14 +287,14 @@
 
                 await update(productRef, updatedProduct);
 
-                alert('Produto atualizado com sucesso!');
+                showNotification('Produto atualizado com sucesso!');
                 loadProducts();
                 clearEditForm();
             } catch (error) {
-                alert('Erro ao atualizar produto: ' + error.message);
+                showNotification('Erro ao atualizar produto: ' + error.message);
             }
         } else {
-            alert('Por favor, preencha todos os campos corretamente.');
+            showNotification('Por favor, preencha todos os campos corretamente.');
         }
     }
 
@@ -287,7 +306,6 @@
         document.getElementById('edit-product-image').value = '';
     }
 
-    // Função para carregar produtos
     function loadProducts() {
         const productsRef = ref(db, 'products');
         onValue(productsRef, snapshot => {
@@ -302,6 +320,7 @@
 
                 const productImage = document.createElement('img');
                 productImage.src = product.image;
+                productImage.alt = product.name;
                 productItem.appendChild(productImage);
 
                 const productName = document.createElement('h3');
